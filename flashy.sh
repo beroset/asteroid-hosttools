@@ -1,0 +1,145 @@
+#! /bin/bash
+# Copyright (C) 2023 Ed Beroset <beroset@ieee.org>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 3 as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+
+declare -a devices=("anthias" "bass" "beluga" "catfish" "dory" "firefish" "harmony" "inharmony" "lenok" "minnow" "mooneye" "narwhal" "ray" "smelt" "sparrow" "sprat" "sturgeon" "sawfish" "skipjack" "swift" "tetra" "wren")
+
+# point to where the images get built
+defaultbuilddir="${ASTEROIDROOT}/build/tmp-glibc/deploy/images"
+# assume we're not already in fastboot mode
+fastboot=false
+# assume we're not in dryrun mode
+condecho=''
+# do permanent install unless told otherwise
+temp=false
+# set empty builddir to start
+builddir=''
+# nightly url base directory
+nightlyurl="https://release.asteroidos.org/nightlies"
+
+function showHelp {
+    cat << EOF
+./flash.sh codename [option]
+Deploy AsteroidOS binary image to a watch.
+
+Available options:
+-h or --help        prints this help screen and quits
+-b or --bootonly    only push the boot image (implies temp; image already pushed)
+-f or --fastboot    watch is already in fastboot mode
+-l or --local       image files are in current working directory
+-t or --temp        perform a temporary install (watch is running WearOS)
+-n or --nightly     download image file(s) from nightly builds
+-N or --dryrun      don't actually flash, just show what would happen
+
+EOF
+}
+if [ -z "$ASTEROIDROOT" ] ; then
+    echo "WARNING: ASTEROIDROOT environment variable not set"
+fi
+
+
+while [[ $# -gt 0 ]] ; do
+    case $1 in 
+        -b|--bootonly)
+            bootonly=true
+            temp=true
+            shift
+            ;;
+        -f|--fastboot)
+            fastboot=true
+            shift
+            ;;
+        -h|--help)
+            showHelp
+            exit 1
+            ;;
+        -l|--local)
+            builddir=$(pwd)
+            shift
+            ;;
+        -n|--nightly)
+            nightly=true
+            builddir=$(pwd)
+            shift
+            ;;
+        -N|--dryrun)
+            condecho="echo"
+            shift
+            ;;
+        -t|--temp)
+            temp=true
+            shift
+            ;;
+        *)
+            valid=false
+            for device in "${devices[@]}"; do
+                [[ "$1" == "${device}" ]] && valid=true
+            done
+            if [[ "${valid}" = true ]]; then
+                codename=$1
+            else
+                echo "Ignoring unknown option $1"
+            fi
+            shift
+            ;;
+    esac
+done 
+
+if [ "${builddir}" = "" ] ; then
+    builddir="${defaultbuilddir}/${codename}"
+fi
+bootfilename=zImage-dtb-${codename}.fastboot
+imgfilename=asteroid-image-${codename}.ext4
+
+bootfile="${builddir}/${bootfilename}"
+imgfile="${builddir}/${imgfilename}"
+
+if [ "${nightly}" = "true" ] ; then
+    ${condecho} wget -nc "${nightlyurl}/${codename}/${bootfilename}" -O "${bootfile}"
+    ${condecho} wget -nc "${nightlyurl}/${codename}/${imgfilename}" -O "${imgfile}"
+fi
+
+
+if [[ ! -f ${bootfile} ]] ; then
+    echo "Error: ${bootfile} does not exist"
+    exit 2
+fi
+if [[ ! -f ${imgfile} ]] ; then
+    echo "Error: ${imgfile} does not exist"
+    exit 2
+fi
+
+if [ "${fastboot}" != "true" ] ; then
+    if [ "${temp}" = true ] ; then
+        if [ "${bootonly}" != true ] ; then
+            ${condecho} adb push -p "${imgfile}" /sdcard/asteroidos.ext4 || exit 1
+        fi
+        ${condecho} adb reboot bootloader || exit 1
+    else
+        ${condecho} ssh root@watch "reboot bootloader" || exit 1
+    fi
+    ${condecho} sleep 5s
+fi
+
+if [ "${temp}" != true ] ; then
+    ${condecho} fastboot flash userdata "${imgfile}" || exit 1
+fi
+${condecho} fastboot flash boot "${bootfile}" || exit 1
+
+${condecho} fastboot continue
+${condecho} ssh-keygen -R watch
+${condecho} ssh-keygen -R 192.168.2.15
+
