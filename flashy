@@ -98,6 +98,12 @@ while [[ $# -gt 0 ]] ; do
     esac
 done 
 
+if [ "${valid}" = "false" ] ; then
+    echo "You must specify a valid device name."
+    showHelp
+    exit 0
+fi
+
 if [ "${builddir}" = "" ] ; then
     builddir="${defaultbuilddir}/${codename}"
 fi
