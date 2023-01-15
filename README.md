@@ -3,7 +3,7 @@ A collection of tools to make it easy to work with AsteroidOS watches from a Lin
 
 These tools are intended to make it a little easier and faster to use an [AsteroidOS](https://github.com/AsteroidOS) watch.
 
-## flashy.sh
+## flashy
 This tool allows a user to easily flash an image of AsteroidOS to a supported watch connected via USB.  To use it, the environment variable `ASTEROIDROOT` should be defined and point to the top level directory of a local copy of the [`asteroid` project](https://github.com/AsteroidOS/asteroid) if you intend to flash images that you have created.
 If you want to just use files from the nightly build, the script will automatically download them into the current directory and then flash them into the watch per the parameters given.
 
@@ -23,13 +23,23 @@ Available options:
 ```
 
 ### Examples
+
+#### Try a temporary installation
 If you have a `sturgeon` model watch currently running WearOS (see https://asteroidos.org/install/ for a list of supported watches and their codenames) connected via USB to your computer and you've got your Linux host set up to automatically give the watch an IP address, you can download and temporarily install AsteroidOS to the watch with a single command:
 
 ```
-./flashy.sh sturgeon --temp --nightly
+./flashy sturgeon --temp --nightly
 ```
-If you want to see what it *would* do if you execute that command (or any other `flashy.sh` command), just use the `-N` or `--dryrun` option which will show but not execute the commands that it would have executed.
+If you want to see what it *would* do if you execute that command (or any other `flashy` command), just use the `-N` or `--dryrun` option which will show but not execute the commands that it would have executed.
 ```
-./flashy.sh sturgeon --temp --nightly --dryrun
+./flashy sturgeon --temp --nightly --dryrun
 ```
 
+#### Try a permanent installation
+If you have verified that your watch successfully runs AsteroidOS in a temporary mode, you can convert to a "permanent" installation easily:
+
+```
+./flashy sturgeon --nightly
+```
+
+This also works to do a fresh flash over an existing "permanent" installation.  We say "permanent" in quotation marks because reverting to WearOS is typically simple as restoring the original boot partition.
