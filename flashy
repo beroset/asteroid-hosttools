@@ -140,12 +140,16 @@ if [ "${fastboot}" != "true" ] ; then
     ${condecho} sleep 5s
 fi
 
-if [ "${temp}" != true ] ; then
-    ${condecho} fastboot flash userdata "${imgfile}" || exit 1
-fi
-${condecho} fastboot flash boot "${bootfile}" || exit 1
 
-${condecho} fastboot continue
+if [ "${temp}" != true ] ; then
+    ${condecho} fastboot oem unlock
+    ${condecho} fastboot flash userdata "${imgfile}" || exit 1
+    ${condecho} fastboot flash boot "${bootfile}" || exit 1
+    ${condecho} fastboot continue
+else 
+    ${condecho} fastboot boot "${bootfile}" || exit 1
+fi
+
 ${condecho} ssh-keygen -R watch
 ${condecho} ssh-keygen -R 192.168.2.15
 
