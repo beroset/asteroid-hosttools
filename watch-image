@@ -1,0 +1,191 @@
+#! /bin/bash
+# Copyright (C) 2023 Ed Beroset <beroset@ieee.org>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 3 as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+
+declare -a devices=("anthias" "bass" "beluga" "catfish" "dory" "firefish" "harmony" "inharmony" "lenok" "minnow" "mooneye" "narwhal" "ray" "smelt" "sparrow" "sprat" "sturgeon" "sawfish" "skipjack" "swift" "tetra" "wren")
+
+# assume we're not saving
+save=false
+# assume we're not restoring
+restore=false
+# assume we're not in dryrun mode
+dryrun=false
+# assume we're not in quiet mode
+quiet=false
+# the codename is initially invalid
+valid=false
+
+function showHelp {
+    cat << EOF
+./watch-image codename [option]
+Save/restore boot partition from watch running AsteroidOS.
+
+Available options:
+-d or --dissect     separates previously saved image into one file per partition
+-h or --help        prints this help screen and quits
+-i or --image FN    uses FN as the file name of the image
+-r or --restore     restore the boot partition of the watch
+-s or --save        save the entire watch image (may be 4G or more!)
+-q or --quiet       don't emit messages describing the action
+-N or --dryrun      don't actually flash, just show what would happen
+
+EOF
+}
+
+function findPart {
+    local whichpart="$1"
+    shift
+    local parts=("$@")
+    for mypart in "${parts[@]}" ; do
+        IFS=" " read -r -a onepart <<< "${mypart}"
+        if [ "${onepart[3]}" = "${whichpart}" ] ; then
+            echo "${mypart}"
+            break
+        fi
+    done
+}
+
+function restorePartition {
+    local whichpart="$1"
+    local imagefile="$2"
+    local mypart
+    local parts
+    # The following line looks complex and it is.
+    # It uses sfdisk to get a list of partitions, with the device, start, sectors and name fields.
+    # Then awk processes only the lines that have data, translating back into /dev/mmcblk0pXX 
+    # which are the names of the partitions on the watch.
+    # Finally mapfile strips the newline characters and stores each line in an array ${parts[@]}
+    # Array lines look like this:
+    #     /dev/mmcblk0p21 199776 65536 boot
+    mapfile -t parts < <(sfdisk -l -o Device,Start,Sectors,Name "${imagefile}" | awk '/'"${imagefile}"'[^:]/{gsub(/'"${imagefile}"'/,"/dev/mmcblk0p"); print}')
+    IFS=" " read -r -a mypart <<< "$(findPart "${whichpart}" "${parts[@]}")"
+    if [ "${dryrun}" = "true" ] ; then
+        echo "I would have written the ${mypart[3]} partition (starting at ${mypart[1]}, containing ${mypart[2]} sectors) to ${mypart[0]}"
+    else
+        [ "${quiet}" = "true" ] || echo "Writing the ${mypart[3]} partition (starting at ${mypart[1]}, containing ${mypart[2]} sectors) to ${mypart[0]}"
+        dd if="${imagefile}" skip="${mypart[1]}" count="${mypart[2]}" | ssh root@watch "dd of=${mypart[0]}"
+    fi
+}
+
+function dissectImage {
+    local imagefile="$1"
+    local mypart
+    local parts
+    # The following line looks complex and it is.
+    # It uses sfdisk to get a list of partitions, with the device, start, sectors and name fields.
+    # Then awk processes only the lines that have data, translating back into /dev/mmcblk0pXX 
+    # which are the names of the partitions on the watch.
+    # Finally mapfile strips the newline characters and stores each line in an array ${parts[@]}
+    # Array lines look like this:
+    #     /dev/mmcblk0p21 199776 65536 boot
+    mapfile -t parts < <(sfdisk -l -o Device,Start,Sectors,Name "${imagefile}" | awk '/'"${imagefile}"'[^:]/{gsub(/'"${imagefile}"'/,"/dev/mmcblk0p"); print}')
+    for onepart in "${parts[@]}" ; do
+        IFS=" " read -r -a mypart <<< "${onepart}"
+        if [ "${dryrun}" = "true" ] ; then
+            echo "I would have written the ${mypart[3]} partition (starting at ${mypart[1]}, containing ${mypart[2]} sectors) to ${mypart[3]}.img"
+        else
+            [ "${quiet}" = "true" ] || echo "Writing the ${mypart[3]} partition (starting at ${mypart[1]}, containing ${mypart[2]} sectors) to ${mypart[3]}.img"
+            dd if="${imagefile}" skip="${mypart[1]}" count="${mypart[2]}" of="${mypart[3]}.img"
+        fi
+    done
+}
+
+while [[ $# -gt 0 ]] ; do
+    case $1 in 
+        -d|--dissect)
+            dissect=true
+            shift
+            ;;
+        -h|--help)
+            showHelp
+            exit 1
+            ;;
+        -i|--image)
+            imagefile="$2"
+            shift
+            shift
+            ;;
+        -r|--restore)
+            restore=true
+            shift
+            ;;
+        -s|--save)
+            save=true
+            shift
+            ;;
+        -q|--quiet)
+            quiet=true
+            shift
+            ;;
+        -N|--dryrun)
+            dryrun=true
+            shift
+            ;;
+        *)
+            for device in "${devices[@]}"; do
+                [ "$1" == "${device}" ] && valid=true
+            done
+            if [[ "${valid}" = true ]]; then
+                codename=$1
+            else
+                echo "Ignoring unknown option $1"
+            fi
+            shift
+            ;;
+    esac
+done 
+
+if [ "${valid}" = "false" ] ; then
+    echo "You must specify a valid device name."
+    showHelp
+    exit 0
+fi
+
+if [ -z "${imagefile}" ] ; then
+    imagefile=original-${codename}.img
+fi
+
+if [ "${save}" = "true" ] ; then
+    if [ "${dryrun}" == "true" ] ; then
+        echo "I would have copied from /dev/mmcblk0 to ${imagefile}"
+        if [[ -f ${imagefile} ]] ; then
+            echo "but ${imagefile} already exists -- will not overwrite"
+        fi
+    else
+        if [[ -f ${imagefile} ]] ; then
+            echo "Error: ${imagefile} already exists -- will not overwrite"
+            exit 2
+        fi
+        [ "${quiet}" = "true" ] || echo "Copying from /dev/mmcblk0 to ${imagefile}"
+        ssh root@watch "dd if=/dev/mmcblk0" | dd "of=$(pwd)/${imagefile}" bs=4096 status=progress
+    fi
+fi
+
+if [ "${restore}" = "true" ] ; then
+    if [[ ! -f ${imagefile} ]] ; then
+        echo "Error: ${imagefile} does not exist"
+        exit 2
+    fi
+    restorePartition "boot" "${imagefile}"
+fi
+
+if [ "${dissect}" = "true" ] ; then
+    if [[ ! -f ${imagefile} ]] ; then
+        echo "Error: ${imagefile} does not exist"
+        exit 2
+    fi
+    dissectImage "${imagefile}"
+fi
