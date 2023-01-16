@@ -32,7 +32,7 @@ nightlyurl="https://release.asteroidos.org/nightlies"
 
 function showHelp {
     cat << EOF
-./flash.sh codename [option]
+./flashy codename [option]
 Deploy AsteroidOS binary image to a watch.
 
 Available options:
