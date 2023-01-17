@@ -126,3 +126,100 @@ It's easy to extract all partitions to individual image files:
 
 This will extract each partition into a separate file named for that partition.  By default it will use the same naming scheme described above, so it will expect a file in the current directory named `original-catfish.img`.  It's possible to override that by specifying the name of the file with the `--image` option. As described earlier.
 
+## watch-util
+This is a multi-use utility to do various things on an AsteroidOS watch.  For example, to put many of my preferred settings into the emulated watch using QEMU, I use this command:
+
+```
+./watch-util --qemu forgetkeys \
+    settimezone America/New_York \
+    settime \
+    routing \
+    wallpaper ~/AsteroidOS/unofficial-watchfaces/wallpaper.jpg \
+    pushface ~/AsteroidOS/unofficial-watchfaces/analog-weather-glow \
+    watchface analog-weather-glow \
+    restart
+```
+
+### Options
+The program options are currently:
+
+```
+./watch-util [option] [command...]
+Utility functions for AsteroidOS device.  By default, uses "Developer Mode"
+over ssh, but can also use "ADB Mode" using ADB.
+
+Available options:
+-h or --help    prints this help screen and quits
+-a or --adb     uses ADB command to communicate with watch
+-p or --port    specifies a port to use for ssh and scp commands
+-r or --remote  specifies the remote (watch)  name or address for ssh and scp commands
+-q or --qemu    communicates with QEMU emulated watch (same as -r localhost -p 2222 )
+
+Available commands:
+fastboot        reboots into bootloader mode
+forgetkeys      forgets the ssh keys for both "watch" and "192.168.2.15"
+snap            takes a screenshot and downloads it to a local jpg file
+settime         sets the time on the watch according to the current time on host
+listtimezone    lists the timezones known to the watch
+settimezone TZ  sets the timezone on the watch to the passed timezone
+wallpaper WP    sets the wallpaper on the watch to named file WP
+restart         restarts the ceres user on the watch
+reboot          reboots the watch
+routing         sets up the routing to go through the local host and DNS 1.1.1.1
+pushface WF     pushes the named watchface to the watch (point to WF directory)
+watchface WF    sets the active watchface to the named watchface
+screen on|off   sets the screen always on or normal mode
+```
+
+### Examples
+
+#### Push a new watchface to your watch
+With the default setup, you can easily push a new watchface to your watch and activate it in one command.
+
+```
+./watch-util \
+    pushface ~/AsteroidOS/unofficial-watchfaces/my-new-watchface \
+    watchface my-new-watchface \
+    restart
+```
+
+#### List timezones on your watch
+You can list timezones your watch knows using this command:
+
+```
+./watch-util listtimezones
+```
+
+#### Set timezone on your watch
+You can easily set a timezone on your watch
+
+```
+./watch-util settimezone Europe/Paris
+```
+
+#### Take a screenshot from your watch
+Taking a screenshot from your watch is now very simple:
+
+```
+./watch-util snap
+```
+
+This will immediately take a screenshot on the watch and copy it to your local directory named with a timestamp, so a screenshot would be named something like `20230117_095533.jpg` for a screenshot taken on 17 January 2023 at 9:55:33 local time.  Note that the timestamp is preserved from the watch, so the timestamp of the file will be the time that the watch thought it was at the time of the screenshot.  The two timestamps might not be the same, but assuming both are synchronized, should differ by no more than a few seconds.
+
+#### Change connected watches
+If you have a watch connected to the computer via USB and then change it to another one, `ssh` will rightly complain:
+
+>    @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+>    @    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
+>    @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+>    IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
+>    Someone could be eavesdropping on you right now (man-in-the-middle attack)!
+>    It is also possible that a host key has just been changed.
+
+The easy way to deal with this is to remove the old keys from the previous watch.  This can be combined with other commands which are always executed in the order they appear on the command line:
+
+```
+./watch-util forget-keys settime
+```
+
+You will be prompted to accept the new keys.  If you say yes to that, the new keys will be accepted and then, in this case, the `settime` command will be executed.

@@ -1,0 +1,235 @@
+#!/bin/bash
+
+function showHelp {
+    cat << EOF
+./watch-util [option] [command...]
+Utility functions for AsteroidOS device.  By default, uses "Developer Mode"
+over ssh, but can also use "ADB Mode" using ADB.
+
+Available options:
+-h or --help    prints this help screen and quits
+-a or --adb     uses ADB command to communicate with watch
+-p or --port    specifies a port to use for ssh and scp commands
+-r or --remote  specifies the remote (watch)  name or address for ssh and scp commands
+-q or --qemu    communicates with QEMU emulated watch (same as -r localhost -p 2222 )
+
+Available commands:
+fastboot        reboots into bootloader mode
+forgetkeys      forgets the ssh keys for both "watch" and "192.168.2.15"
+snap            takes a screenshot and downloads it to a local jpg file
+settime         sets the time on the watch according to the current time on host
+listtimezone    lists the timezones known to the watch
+settimezone TZ  sets the timezone on the watch to the passed timezone
+wallpaper WP    sets the wallpaper on the watch to named file WP
+restart         restarts the ceres user on the watch
+reboot          reboots the watch
+routing         sets up the routing to go through the local host and DNS 1.1.1.1
+pushface WF     pushes the named watchface to the watch (point to WF directory)
+watchface WF    sets the active watchface to the named watchface
+screen on|off   sets the screen always on or normal mode
+
+EOF
+}
+
+function doWatchCommand {
+    local user="$1"
+    local cmd=$2
+    case ${user} in 
+        root)
+            if [ "$ADB" == true ] ; then
+                adb shell "${cmd}"
+            else
+                ssh -p "${WATCHPORT}" -t root@"${WATCHADDR}" ${cmd}
+            fi
+            ;;
+        ceres)
+            if [ "$ADB" == true ] ; then
+                printf -v cmd %q "${cmd}"
+                adb shell "su -l -c ${cmd} ceres"
+            else
+                ssh -p "${WATCHPORT}" -t ceres@"${WATCHADDR}" ${cmd}
+            fi
+            ;;
+        *)
+            echo "Error: unknown watch user ${user}"
+            ;;
+    esac
+}
+
+function setDconf {
+    local dconfsetting="$1"
+    local filename="$2"
+    doWatchCommand "ceres" "dconf write ${dconfsetting} '\"file://${filename}\"'"
+}
+
+function pushFiles {
+    local sourcedir="$1"
+    local destdir="$2"
+    if [ "$ADB" = true ] ; then
+        adb push ${sourcedir} "${destdir}"
+    else
+        scp -P"${WATCHPORT}" -r ${sourcedir} "root@${WATCHADDR}:${destdir}"
+    fi
+}
+
+function pullFiles {
+    local sourcedir="$1"
+    local destdir="$2"
+    if [ "$ADB" = true ] ; then
+        adb pull ${sourcedir} "${destdir}"
+    else
+        scp -P"${WATCHPORT}" "root@${WATCHADDR}:${sourcedir}" "${destdir}"
+    fi
+}
+
+function pushWatchface {
+    pushFiles "${1}"'/usr/share/*' "/usr/share/"
+}
+
+function pushWallpaper {
+    local source="$1"
+    local wallpaper="$(basename "$1")"
+    local destination="/usr/share/asteroid-launcher/wallpapers/full/${wallpaper}"
+    pushFiles "${source}" "${destination}"
+    setDconf "/desktop/asteroid/background-filename" "${destination}"
+}
+
+function restartCeres {
+    doWatchCommand "root" "systemctl restart user@1000"
+}
+
+function activateWatchface {
+    setDconf "/desktop/asteroid/watchface" "/usr/share/asteroid-launcher/watchfaces/${1}.qml"
+}
+
+function setTimeZone {
+    doWatchCommand "root" "timedatectl set-timezone $1"
+}
+
+function forgetKeys {
+    ssh-keygen -R ${WATCHADDR}
+    ssh-keygen -R watch
+}
+
+function setTime {
+    doWatchCommand "root" "date -s @`(date -u +"%s" )`"
+}
+
+function getScreenshot {
+    doWatchCommand "ceres" "screenshottool /home/ceres/screenshot.jpg 0"
+    pullFiles "/home/ceres/screenshot.jpg" "$(date +%Y%m%d_%H%M%S).jpg"
+}
+
+function setRouting {
+    doWatchCommand "root" "route add default gw ${MYADDR}"
+    doWatchCommand "root" 'echo "nameserver 1.1.1.1" >> /etc/resolv.conf'
+}
+
+function screen {
+    if [ "$1" = "on" ] ; then
+        doWatchCommand "root" "mcetool -D on"
+    else
+        doWatchCommand "root" "mcetool -D off"
+    fi
+}
+
+# These are the defaults for SSH access
+WATCHPORT=22
+WATCHADDR=192.168.2.15
+# These are the defaults for local QEMU target
+QEMUPORT=2222
+QEMUADDR=localhost
+# Assume no ADB unless told otherwise
+ADB=false
+# get this host's IPv4 address
+MYADDR=$(hostname -I |grep -oP 192.168.2.[[:digit:]]+)
+
+while [[ $# -gt 0 ]] ; do
+    case $1 in 
+        -a|--adb)
+            ADB=true
+            shift
+            ;;
+        -q|--qemu)
+            WATCHPORT=${QEMUPORT}
+            WATCHADDR=${QEMUADDR}
+            shift
+            ;;
+        -p|--port)
+            WATCHPORT="$2"
+            shift
+            shift
+            ;;
+        -r|--remote)
+            WATCHADDR="$2"
+            shift
+            shift
+            ;;
+        -h|--help)
+            showHelp
+            exit 1
+            ;;
+        fastboot)
+            doWatchCommand "root" "reboot bootloader"
+            shift
+            ;;
+        screen)
+            screen "$2"
+            shift
+            shift
+            ;;
+        snap)
+            getScreenshot
+            shift
+            ;;
+        settime)
+            setTime
+            shift
+            ;;
+        settimezone)
+            setTimeZone "$2"
+            shift
+            shift
+            ;;
+        pushface)
+             pushWatchface "$2"
+            shift
+            shift
+            ;;
+        forgetkeys)
+            forgetKeys
+            shift
+            ;;
+        listtimezones)
+            doWatchCommand "root" "timedatectl list-timezones"
+            shift
+            ;;
+        wallpaper)
+            pushWallpaper "$2"
+            shift
+            shift
+            ;;
+        reboot)
+            doWatchCommand "root" "reboot"
+            shift
+            ;;
+        restart)
+            restartCeres
+            shift
+            ;;
+        routing)
+            setRouting
+            shift
+            ;;
+        watchface)
+            activateWatchface "$2"
+            shift
+            shift
+            ;;
+        *)
+            echo "Ignoring unknown option $1"
+            shift
+            ;;
+    esac
+done 
+
