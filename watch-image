@@ -45,6 +45,17 @@ Available options:
 EOF
 }
 
+function getParts {
+    local imagefile="$1"
+    # The following line looks complex and it is.
+    # It uses sfdisk to get a list of partitions, with the device, start, sectors and name fields.
+    # Then awk processes only the lines that have data, translating back into /dev/mmcblk0pXX 
+    # which are the names of the partitions on the watch.
+    # Lines look like this:
+    #     /dev/mmcblk0p21 199776 65536 boot
+    sfdisk -l -o Device,Start,Sectors,Name "${imagefile}" | awk '/'"${imagefile}"'[^:]/{gsub(/'"${imagefile}"'/,"/dev/mmcblk0p"); print}'
+}
+
 function findPart {
     local whichpart="$1"
     shift
@@ -63,14 +74,7 @@ function restorePartition {
     local imagefile="$2"
     local mypart
     local parts
-    # The following line looks complex and it is.
-    # It uses sfdisk to get a list of partitions, with the device, start, sectors and name fields.
-    # Then awk processes only the lines that have data, translating back into /dev/mmcblk0pXX 
-    # which are the names of the partitions on the watch.
-    # Finally mapfile strips the newline characters and stores each line in an array ${parts[@]}
-    # Array lines look like this:
-    #     /dev/mmcblk0p21 199776 65536 boot
-    mapfile -t parts < <(sfdisk -l -o Device,Start,Sectors,Name "${imagefile}" | awk '/'"${imagefile}"'[^:]/{gsub(/'"${imagefile}"'/,"/dev/mmcblk0p"); print}')
+    mapfile -t parts < <(getParts "${imagefile}")
     IFS=" " read -r -a mypart <<< "$(findPart "${whichpart}" "${parts[@]}")"
     if [ "${dryrun}" = "true" ] ; then
         echo "I would have written the ${mypart[3]} partition (starting at ${mypart[1]}, containing ${mypart[2]} sectors) to ${mypart[0]}"
@@ -84,14 +88,7 @@ function dissectImage {
     local imagefile="$1"
     local mypart
     local parts
-    # The following line looks complex and it is.
-    # It uses sfdisk to get a list of partitions, with the device, start, sectors and name fields.
-    # Then awk processes only the lines that have data, translating back into /dev/mmcblk0pXX 
-    # which are the names of the partitions on the watch.
-    # Finally mapfile strips the newline characters and stores each line in an array ${parts[@]}
-    # Array lines look like this:
-    #     /dev/mmcblk0p21 199776 65536 boot
-    mapfile -t parts < <(sfdisk -l -o Device,Start,Sectors,Name "${imagefile}" | awk '/'"${imagefile}"'[^:]/{gsub(/'"${imagefile}"'/,"/dev/mmcblk0p"); print}')
+    mapfile -t parts < <(getParts "${imagefile}")
     for onepart in "${parts[@]}" ; do
         IFS=" " read -r -a mypart <<< "${onepart}"
         if [ "${dryrun}" = "true" ] ; then
