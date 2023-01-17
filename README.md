@@ -144,6 +144,7 @@ This is a multi-use utility to do various things on an AsteroidOS watch.  For ex
 The program options are currently:
 
 ```
+watch-util v1.0
 ./watch-util [option] [command...]
 Utility functions for AsteroidOS device.  By default, uses "Developer Mode"
 over ssh, but can also use "ADB Mode" using ADB.
@@ -154,8 +155,11 @@ Available options:
 -p or --port    specifies a port to use for ssh and scp commands
 -r or --remote  specifies the remote (watch)  name or address for ssh and scp commands
 -q or --qemu    communicates with QEMU emulated watch (same as -r localhost -p 2222 )
+-v or --version displays the version of this program
 
 Available commands:
+backup BD       backs up settings of currently connected watch to directory BD
+restore BD      restores previously saved settings from dir BD to connected watch
 fastboot        reboots into bootloader mode
 forgetkeys      forgets the ssh keys for both "watch" and "192.168.2.15"
 snap            takes a screenshot and downloads it to a local jpg file
@@ -223,3 +227,20 @@ The easy way to deal with this is to remove the old keys from the previous watch
 ```
 
 You will be prompted to accept the new keys.  If you say yes to that, the new keys will be accepted and then, in this case, the `settime` command will be executed.
+
+#### Backup/restore settings for a watch
+Most of the configuration options in Settings and the settings for various programs can be backed up very easily:
+
+```
+./watch-util backup mywatchconfig
+```
+
+This will navigate to a directory `mywatchconfig` which *must already exist* and save the configuration from the `ceres` user on the watch to that directory.  
+
+Restoration is very similar:
+
+```
+./watch-util restore mywatchconfig restart
+```
+
+This will restore the settings to the connected watch.  **NOTE:** Use this option *very carefully*, as it will overwrite settings already on the watch.  For instance, it will set the current watchface regardless of whether that watchface is actually installed on the watch.  It's recommended to do a `restart` after restoring the configuration so that the settings take effect.  
