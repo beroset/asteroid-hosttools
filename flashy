@@ -135,9 +135,8 @@ if [ "${fastboot}" != "true" ] ; then
         fi
         ${condecho} adb reboot bootloader || exit 1
     else
-        ${condecho} ssh root@watch "reboot bootloader" || exit 1
+        ${condecho} ssh root@watch "reboot bootloader"
     fi
-    ${condecho} sleep 5s
 fi
 
 
