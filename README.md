@@ -1,7 +1,27 @@
 # asteroid-hosttools
 A collection of tools to make it easy to work with AsteroidOS watches from a Linux host
 
-These tools are intended to make it a little easier and faster to use an [AsteroidOS](https://github.com/AsteroidOS) watch.
+These tools are intended to make it a little easier and faster to use an [AsteroidOS](https://github.com/AsteroidOS) watch.  To give an idea of how they're intended to be used, here's a short summary:
+
+Let's say you have a TicWatch Pro watch (codename `catfish`) that is running the stock WearOS image, and you'd like to try out AsteroidOS.
+
+`flashy catfish --nightly --temp`
+
+This automatically downloads the nightly catfish images and does a temporary install.
+
+`watch-image catfish --save`
+
+This saves the entire flash image of the watch as a file. It's about 3.6GiB, so make sure you have room.
+
+After a while, you decide to use AsteroidOS all the time, so you install it permanently:
+
+`flashy catfish --nightly`
+
+Much later, perhaps you find another watch you like better and would like to sell this one.  Or perhaps you just want to revert to WearOS to see how it does some particular thing.  You can restore it like this with the previously saved image file:
+
+`watch-image catfish --restore`
+
+Now the next time you reboot the watch it will start up in WearOS.
 
 ## flashy
 This tool allows a user to easily flash an image of AsteroidOS to a supported watch connected via USB.  To use it, the environment variable `ASTEROIDROOT` should be defined and point to the top level directory of a local copy of the [`asteroid` project](https://github.com/AsteroidOS/asteroid) if you intend to flash images that you have created.
