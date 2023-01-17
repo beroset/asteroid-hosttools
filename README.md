@@ -209,12 +209,12 @@ This will immediately take a screenshot on the watch and copy it to your local d
 #### Change connected watches
 If you have a watch connected to the computer via USB and then change it to another one, `ssh` will rightly complain:
 
->    @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
->    @    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
->    @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
->    IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
->    Someone could be eavesdropping on you right now (man-in-the-middle attack)!
->    It is also possible that a host key has just been changed.
+>     @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+>     @    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
+>     @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+>     IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
+>     Someone could be eavesdropping on you right now (man-in-the-middle attack)!
+>     It is also possible that a host key has just been changed.
 
 The easy way to deal with this is to remove the old keys from the previous watch.  This can be combined with other commands which are always executed in the order they appear on the command line:
 
