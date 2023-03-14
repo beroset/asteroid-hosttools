@@ -116,6 +116,8 @@ imgfile="${builddir}/${imgfilename}"
 if [ "${nightly}" = "true" ] ; then
     ${condecho} wget -nc "${nightlyurl}/${codename}/${bootfilename}" -O "${bootfile}"
     ${condecho} wget -nc "${nightlyurl}/${codename}/${imgfilename}" -O "${imgfile}"
+    ${condecho} wget -nc "${nightlyurl}/${codename}/SHA512SUMS" -O "SHA512SUMS"
+    ${condecho} sha512sum --check SHA512SUMS || exit 1
 fi
 
 
