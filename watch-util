@@ -185,13 +185,16 @@ while [[ $# -gt 0 ]] ; do
             shift
             ;;
         backup)
-            pullFiles "ceres" "/home/ceres/.config" "$2"
+            pullFiles "ceres" "/home/ceres/.config" "$2/ceresconfig"
+            pullFiles "root" "/var/lib/connman" "$2/connman"
             shift
             shift
             ;;
         restore)
-            pushd "$2"
+            pushd "$2/ceresconfig"
             pushFiles "ceres" "*" "/home/ceres/.config/"
+            cd "$2/connman"
+            pushFiles "root" "*" "/var/lib/connman"
             popd
             shift
             shift
