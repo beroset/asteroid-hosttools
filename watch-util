@@ -9,8 +9,8 @@ function showHelp {
     showVersion
     cat << EOF
 ./watch-util [option] [command...]
-Utility functions for AsteroidOS device.  By default, uses "Developer Mode"
-over ssh, but can also use "ADB Mode" using ADB.
+Utility functions for AsteroidOS device.  By default, uses "SSH Mode"
+but can also use "ADB Mode."
 
 Available options:
 -h or --help    prints this help screen and quits

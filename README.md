@@ -146,8 +146,8 @@ The program options are currently:
 ```
 watch-util v1.0
 ./watch-util [option] [command...]
-Utility functions for AsteroidOS device.  By default, uses "Developer Mode"
-over ssh, but can also use "ADB Mode" using ADB.
+Utility functions for AsteroidOS device.  By default, uses "SSH Mode"
+but can also use "ADB Mode."
 
 Available options:
 -h or --help    prints this help screen and quits
