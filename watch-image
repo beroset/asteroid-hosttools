@@ -79,7 +79,7 @@ function restorePartition {
         echo "I would have written the ${mypart[3]} partition (starting at ${mypart[1]}, containing ${mypart[2]} sectors) to ${mypart[0]}"
     else
         [ "${quiet}" = "true" ] || echo "Writing the ${mypart[3]} partition (starting at ${mypart[1]}, containing ${mypart[2]} sectors) to ${mypart[0]}"
-        dd if="${imagefile}" skip="${mypart[1]}" count="${mypart[2]}" | ssh root@watch "dd of=${mypart[0]}"
+        dd if="${imagefile}" skip="${mypart[1]}" count="${mypart[2]}" | ssh root@192.168.2.15 "dd of=${mypart[0]}"
     fi
 }
 
@@ -166,7 +166,7 @@ if [ "${save}" = "true" ] ; then
             exit 2
         fi
         [ "${quiet}" = "true" ] || echo "Copying from /dev/mmcblk0 to ${imagefile}"
-        ssh root@watch "dd if=/dev/mmcblk0" | dd "of=$(pwd)/${imagefile}" bs=4096 status=progress
+        ssh root@192.168.2.15 "dd if=/dev/mmcblk0" | dd "of=$(pwd)/${imagefile}" bs=4096 status=progress
     fi
 fi
 
