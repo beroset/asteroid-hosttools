@@ -100,8 +100,9 @@ function pushWatchface {
 
 function pushWallpaper {
     local source="$1"
-    local wallpaper="$(basename "$1")"
+    local wallpaper
     local destination="/usr/share/asteroid-launcher/wallpapers/full/${wallpaper}"
+    wallpaper="$(basename "$1")"
     pushFiles "root" "${source}" "${destination}"
     setDconf "/desktop/asteroid/background-filename" "${destination}"
 }
