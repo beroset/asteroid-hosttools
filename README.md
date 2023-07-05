@@ -144,7 +144,7 @@ This is a multi-use utility to do various things on an AsteroidOS watch.  For ex
 The program options are currently:
 
 ```
-watch-util v1.0
+watch-util v1.1
 ./watch-util [option] [command...]
 Utility functions for AsteroidOS device.  By default, uses "SSH Mode"
 but can also use "ADB Mode."
@@ -169,6 +169,7 @@ settimezone TZ  sets the timezone on the watch to the passed timezone
 wallpaper WP    sets the wallpaper on the watch to named file WP
 restart         restarts the ceres user on the watch
 reboot          reboots the watch
+waitwatch MSG   wait for a watch to connect while displaying MSG
 routing         sets up the routing to go through the local host and DNS 1.1.1.1
 pushface WF     pushes the named watchface to the watch (point to WF directory)
 watchface WF    sets the active watchface to the named watchface
@@ -184,7 +185,8 @@ With the default setup, you can easily push a new watchface to your watch and ac
 ./watch-util \
     pushface ~/AsteroidOS/unofficial-watchfaces/my-new-watchface \
     watchface my-new-watchface \
-    restart
+    restart \
+    wait "Waiting for watch"
 ```
 
 #### List timezones on your watch
