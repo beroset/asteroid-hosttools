@@ -204,11 +204,11 @@ while [[ $# -gt 0 ]] ; do
             shift
             ;;
         restore)
-            pushd "$2/ceresconfig"
+            pushd "$2/ceresconfig" || exit
             pushFiles "ceres" "*" "/home/ceres/.config/"
-            cd "$2/connman"
+            cd "$2/connman" || exit
             pushFiles "root" "*" "/var/lib/connman"
-            popd
+            popd || exit
             shift
             shift
             ;;
