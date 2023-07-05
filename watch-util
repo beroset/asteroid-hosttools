@@ -166,7 +166,7 @@ QEMUADDR=localhost
 # Assume no ADB unless told otherwise
 ADB=false
 # get this host's IPv4 address
-MYADDR=$(hostname -I |grep -oP 192.168.2.[[:digit:]]+)
+MYADDR=$(hostname -I |grep -oP "192.168.2.[[:digit:]]+")
 
 while [[ $# -gt 0 ]] ; do
     case $1 in 
