@@ -32,7 +32,7 @@ settimezone TZ  sets the timezone on the watch to the passed timezone
 wallpaper WP    sets the wallpaper on the watch to named file WP
 restart         restarts the ceres user on the watch
 reboot          reboots the watch
-waitwatch MSG   wait for a watch to connect while displaying MSG
+wait MSG        wait for a watch to connect while displaying MSG
 routing         sets up the routing to go through the local host and DNS 1.1.1.1
 pushface WF     pushes the named watchface to the watch (point to WF directory)
 watchface WF    sets the active watchface to the named watchface
