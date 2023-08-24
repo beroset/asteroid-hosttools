@@ -27,7 +27,7 @@ fastboot        reboots into bootloader mode
 forgetkeys      forgets the ssh keys for both "watch" and "192.168.2.15"
 snap            takes a screenshot and downloads it to a local jpg file
 settime         sets the time on the watch according to the current time on host
-listtimezone    lists the timezones known to the watch
+listtimezones   lists the timezones known to the watch
 settimezone TZ  sets the timezone on the watch to the passed timezone
 wallpaper WP    sets the wallpaper on the watch to named file WP
 restart         restarts the ceres user on the watch
