@@ -24,6 +24,8 @@ fastboot=false
 condecho=''
 # do permanent install unless told otherwise
 temp=false
+# assume the watch is currently in SSH mode
+useadb=false
 # set empty builddir to start
 builddir=''
 # nightly url base directory
@@ -36,6 +38,7 @@ Deploy AsteroidOS binary image to a watch.
 
 Available options:
 -h or --help        prints this help screen and quits
+-a or --useadb      use ADB mode to reboot to fastboot
 -b or --bootonly    only push the boot image (implies temp; image already pushed)
 -f or --fastboot    watch is already in fastboot mode
 -l or --local       image files are in current working directory
@@ -52,6 +55,10 @@ fi
 
 while [[ $# -gt 0 ]] ; do
     case $1 in 
+        -a|--useadb)
+            useadb=true
+            shift
+            ;;
         -b|--bootonly)
             bootonly=true
             temp=true
@@ -136,7 +143,11 @@ if [ "${fastboot}" != "true" ] ; then
         fi
         ${condecho} adb reboot bootloader || exit 1
     else
-        ${condecho} ssh root@192.168.2.15 "reboot bootloader"
+        if [ "${useadb}" = true ] ; then
+            ${condecho} adb reboot bootloader || exit 1
+        else
+            ${condecho} ssh root@192.168.2.15 "reboot bootloader"
+        fi
     fi
 fi
 
