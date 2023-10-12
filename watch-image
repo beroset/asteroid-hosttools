@@ -37,11 +37,13 @@ function showHelp {
     showVersion
     cat << EOF
 ./watch-image codename [option]
-Save/restore boot partition from watch running AsteroidOS.
+Save/restore boot partition from watch running AsteroidOS.  By default, uses
+"SSH Mode" but can also use "ADB Mode."
 
 Available options:
 -d or --dissect     separates previously saved image into one file per partition
 -h or --help        prints this help screen and quits
+-a or --adb         uses ADB command to communicate with watch
 -i or --image FN    uses FN as the file name of the image
 -r or --restore     restore the boot partition of the watch
 -s or --save        save the entire watch image (may be 4G or more!)
@@ -83,11 +85,15 @@ function restorePartition {
     local parts
     mapfile -t parts < <(getParts "${imagefile}")
     IFS=" " read -r -a mypart <<< "$(findPart "${whichpart}" "${parts[@]}")"
-    if [ "${dryrun}" = "true" ] ; then
-        echo "I would have written the ${mypart[3]} partition (starting at ${mypart[1]}, containing ${mypart[2]} sectors) to ${mypart[0]}"
+    if [ "${ADB}" = true ] ; then
+        echo "Restoration of partition is not yet supported in ADB mode."
     else
-        [ "${quiet}" = "true" ] || echo "Writing the ${mypart[3]} partition (starting at ${mypart[1]}, containing ${mypart[2]} sectors) to ${mypart[0]}"
-        dd if="${imagefile}" skip="${mypart[1]}" count="${mypart[2]}" | ssh root@192.168.2.15 "dd of=${mypart[0]}"
+        if [ "${dryrun}" = "true" ] ; then
+            echo "I would have written the ${mypart[3]} partition (starting at ${mypart[1]}, containing ${mypart[2]} sectors) to ${mypart[0]}"
+        else
+            [ "${quiet}" = "true" ] || echo "Writing the ${mypart[3]} partition (starting at ${mypart[1]}, containing ${mypart[2]} sectors) to ${mypart[0]}"
+            dd if="${imagefile}" skip="${mypart[1]}" count="${mypart[2]}" | ssh root@192.168.2.15 "dd of=${mypart[0]}"
+        fi
     fi
 }
 
@@ -107,8 +113,24 @@ function dissectImage {
     done
 }
 
+function saveImage {
+    local imagefile="$1"
+    if [ "${ADB}" == true ] ; then
+        adb pull /dev/mmcblk0 "${imagefile}"
+    else
+        ssh root@192.168.2.15 "dd if=/dev/mmcblk0" | dd "of=$(pwd)/${imagefile}" bs=4096 status=progress
+    fi
+}
+
+# Assume no ADB unless told otherwise
+ADB=false
+
 while [[ $# -gt 0 ]] ; do
     case $1 in 
+        -a|--adb)
+            ADB=true
+            shift
+            ;;
         -d|--dissect)
             dissect=true
             shift
@@ -178,7 +200,7 @@ if [ "${save}" = "true" ] ; then
             exit 2
         fi
         [ "${quiet}" = "true" ] || echo "Copying from /dev/mmcblk0 to ${imagefile}"
-        ssh root@192.168.2.15 "dd if=/dev/mmcblk0" | dd "of=$(pwd)/${imagefile}" bs=4096 status=progress
+        saveImage "${imagefile}"
     fi
 fi
 
