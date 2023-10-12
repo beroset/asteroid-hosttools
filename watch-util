@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION="1.1"
+VERSION="1.2"
 
 function showVersion {
     echo "watch-util v${VERSION}"
@@ -25,6 +25,7 @@ backup BD       backs up settings of currently connected watch to directory BD
 restore BD      restores previously saved settings from dir BD to connected watch
 fastboot        reboots into bootloader mode
 forgetkeys      forgets the ssh keys for both "watch" and "192.168.2.15"
+present         return true if watch is present, otherwise false
 snap            takes a screenshot and downloads it to a local jpg file
 settime         sets the time on the watch according to the current time on host
 listtimezones   lists the timezones known to the watch
@@ -46,14 +47,14 @@ function doWatchCommand {
     local cmd=$2
     case ${user} in 
         root)
-            if [ "$ADB" == true ] ; then
+            if [ "${ADB}" == true ] ; then
                 adb shell "${cmd}"
             else
                 ssh -p "${WATCHPORT}" -t root@"${WATCHADDR}" ${cmd}
             fi
             ;;
         ceres)
-            if [ "$ADB" == true ] ; then
+            if [ "${ADB}" == true ] ; then
                 printf -v cmd %q "${cmd}"
                 adb shell "su -l -c ${cmd} ceres"
             else
@@ -76,7 +77,10 @@ function pushFiles {
     local user="$1"
     local sourcedir="$2"
     local destdir="$3"
-    if [ "$ADB" = true ] ; then
+    if [ "${ADB}" = true ] ; then
+        if [ "${user}" != "root" ] && [[ "${destdir::1}" != '/' ]] ; then
+            destdir="/home/${user}/${destdir}"
+        fi
         adb push ${sourcedir} "${destdir}"
     else
         scp -P"${WATCHPORT}" -r ${sourcedir} "${user}@${WATCHADDR}:${destdir}"
@@ -87,7 +91,10 @@ function pullFiles {
     local user="$1"
     local sourcedir="$2"
     local destdir="$3"
-    if [ "$ADB" = true ] ; then
+    if [ "${ADB}" = true ] ; then
+        if [ "${user}" != "root" ] && [[ "${sourcedir::1}" != '/' ]] ; then
+            sourcedir="/home/${user}/${sourcedir}"
+        fi
         adb pull ${sourcedir} "${destdir}"
     else
         scp -P"${WATCHPORT}" -r "${user}@${WATCHADDR}:${sourcedir}" "${destdir}"
@@ -124,9 +131,23 @@ function forgetKeys {
     ssh-keygen -R watch
 }
 
+function watchPresent {
+    local result=false
+    if [ "${ADB}" == true ] ; then
+        if [ "$(adb get-state 2>/dev/null)" = "device" ] ; then
+            result=true
+        fi
+    else
+        if route |grep 192.168.2.0 > /dev/null ; then
+            result=true
+        fi
+    fi
+    echo "${result}"
+}
+
 function waitWatch {
     echo "$1"
-    if [ "$ADB" = true ] ; then
+    if [ "${ADB}" == true ] ; then
         adb wait-for-usb-device
     else
         while ! route |grep 192.168.2.0 > /dev/null ; do 
@@ -147,6 +168,21 @@ function getScreenshot {
 function setRouting {
     doWatchCommand "root" "route add default gw ${MYADDR}"
     doWatchCommand "root" 'echo "nameserver 1.1.1.1" >> /etc/resolv.conf'
+}
+
+function backupSettings {
+    local backupdir="$1"
+    pullFiles "ceres" "/home/ceres/.config" "${backupdir}/ceresconfig"
+    pullFiles "root" "/var/lib/connman" "${backupdir}/connman"
+}
+
+function restoreSettings {
+    local backupdir="$1"
+    pushd "${backupdir}/ceresconfig" || exit
+    pushFiles "ceres" "*" "/home/ceres/.config/"
+    cd "${backupdir}/connman" || exit
+    pushFiles "root" "*" "/var/lib/connman"
+    popd || exit
 }
 
 function screen {
@@ -198,18 +234,17 @@ while [[ $# -gt 0 ]] ; do
             shift
             ;;
         backup)
-            pullFiles "ceres" "/home/ceres/.config" "$2/ceresconfig"
-            pullFiles "root" "/var/lib/connman" "$2/connman"
+            backupSettings "$2"
             shift
             shift
             ;;
         restore)
-            pushd "$2/ceresconfig" || exit
-            pushFiles "ceres" "*" "/home/ceres/.config/"
-            cd "$2/connman" || exit
-            pushFiles "root" "*" "/var/lib/connman"
-            popd || exit
+            restoreSettings "$2"
             shift
+            shift
+            ;;
+        present)
+            watchPresent
             shift
             ;;
         fastboot)
