@@ -14,6 +14,12 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+VERSION="1.2"
+
+function showVersion {
+    echo "flashy v${VERSION}"
+}
+
 declare -a devices=("anthias" "bass" "beluga" "catfish" "dory" "firefish" "harmony" "koi" "inharmony" "lenok" "minnow" "mooneye" "narwhal" "nemo" "pike" "ray" "smelt" "sparrow" "sparrow-mainline" "sprat" "sturgeon" "sawfish" "skipjack" "swift" "tetra" "triggerfish" "wren")
 
 # point to where the images get built
@@ -32,19 +38,21 @@ builddir=''
 nightlyurl="https://release.asteroidos.org/nightlies"
 
 function showHelp {
+    showVersion
     cat << EOF
 ./flashy codename [option]
 Deploy AsteroidOS binary image to a watch.
 
 Available options:
 -h or --help        prints this help screen and quits
--a or --useadb      use ADB mode to reboot to fastboot
+-a or --adb         use ADB mode to reboot to fastboot
 -b or --bootonly    only push the boot image (implies temp; image already pushed)
 -f or --fastboot    watch is already in fastboot mode
 -l or --local       image files are in current working directory
 -t or --temp        perform a temporary install (watch is running WearOS)
 -n or --nightly     download image file(s) from nightly builds
 -N or --dryrun      don't actually flash, just show what would happen
+-v or --version     displays the version of this program
 
 EOF
 }
@@ -87,6 +95,10 @@ while [[ $# -gt 0 ]] ; do
             ;;
         -t|--temp)
             temp=true
+            shift
+            ;;
+        -v|--version)
+            showVersion
             shift
             ;;
         *)
