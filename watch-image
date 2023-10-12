@@ -14,6 +14,12 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+VERSION="1.2"
+
+function showVersion {
+    echo "watch-image v${VERSION}"
+}
+
 declare -a devices=("anthias" "bass" "beluga" "catfish" "dory" "firefish" "harmony" "koi" "inharmony" "lenok" "minnow" "mooneye" "narwhal" "nemo" "pike" "ray" "smelt" "sparrow" "sparrow-mainline" "sprat" "sturgeon" "sawfish" "skipjack" "swift" "tetra" "triggerfish" "wren")
 
 # assume we're not saving
@@ -28,6 +34,7 @@ quiet=false
 valid=false
 
 function showHelp {
+    showVersion
     cat << EOF
 ./watch-image codename [option]
 Save/restore boot partition from watch running AsteroidOS.
@@ -40,6 +47,7 @@ Available options:
 -s or --save        save the entire watch image (may be 4G or more!)
 -q or --quiet       don't emit messages describing the action
 -N or --dryrun      don't actually flash, just show what would happen
+-v or --version     displays the version of this program
 
 EOF
 }
@@ -128,6 +136,10 @@ while [[ $# -gt 0 ]] ; do
             ;;
         -N|--dryrun)
             dryrun=true
+            shift
+            ;;
+        -v|--version)
+            showVersion
             shift
             ;;
         *)
