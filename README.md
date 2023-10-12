@@ -30,17 +30,20 @@ If you want to just use files from the nightly build, the script will automatica
 ### Options
 The program options are currently:
 ```
+flashy v1.2
 ./flashy codename [option]
 Deploy AsteroidOS binary image to a watch.
 
 Available options:
 -h or --help        prints this help screen and quits
+-a or --adb         use ADB mode to reboot to fastboot
 -b or --bootonly    only push the boot image (implies temp; image already pushed)
 -f or --fastboot    watch is already in fastboot mode
 -l or --local       image files are in current working directory
 -t or --temp        perform a temporary install (watch is running WearOS)
 -n or --nightly     download image file(s) from nightly builds
 -N or --dryrun      don't actually flash, just show what would happen
+-v or --version     displays the version of this program
 ```
 
 ### Examples
@@ -73,17 +76,22 @@ This tool allows a user to easily save and restore the original disk image for a
 ### Options
 The program options are currently:
 ```
+watch-image v1.2
 ./watch-image codename [option]
-Save/restore boot partition from watch running AsteroidOS.
+Save/restore boot partition from watch running AsteroidOS.  By default, uses
+"SSH Mode" but can also use "ADB Mode."
 
 Available options:
 -d or --dissect     separates previously saved image into one file per partition
 -h or --help        prints this help screen and quits
+-a or --adb         uses ADB command to communicate with watch
 -i or --image FN    uses FN as the file name of the image
 -r or --restore     restore the boot partition of the watch
 -s or --save        save the entire watch image (may be 4G or more!)
 -q or --quiet       don't emit messages describing the action
 -N or --dryrun      don't actually flash, just show what would happen
+-v or --version     displays the version of this program
+
 ```
 
 ### Examples
@@ -117,6 +125,8 @@ If you have a permanent installation of AsteroidOS on your watch and have alread
 
 This reverts to the original boot partition, effectively restoring the original operating system.  Reboot the watch to boot into the original OS (usually WearOS). 
 
+**Note:** Restoration of a partition in ADB mode is not currently supported.
+
 #### Dissect a saved disk image
 It's easy to extract all partitions to individual image files:
 
@@ -144,7 +154,7 @@ This is a multi-use utility to do various things on an AsteroidOS watch.  For ex
 The program options are currently:
 
 ```
-watch-util v1.1
+watch-util v1.2
 ./watch-util [option] [command...]
 Utility functions for AsteroidOS device.  By default, uses "SSH Mode"
 but can also use "ADB Mode."
@@ -162,6 +172,7 @@ backup BD       backs up settings of currently connected watch to directory BD
 restore BD      restores previously saved settings from dir BD to connected watch
 fastboot        reboots into bootloader mode
 forgetkeys      forgets the ssh keys for both "watch" and "192.168.2.15"
+present         return true if watch is present, otherwise false
 snap            takes a screenshot and downloads it to a local jpg file
 settime         sets the time on the watch according to the current time on host
 listtimezones   lists the timezones known to the watch
@@ -169,7 +180,7 @@ settimezone TZ  sets the timezone on the watch to the passed timezone
 wallpaper WP    sets the wallpaper on the watch to named file WP
 restart         restarts the ceres user on the watch
 reboot          reboots the watch
-waitwatch MSG   wait for a watch to connect while displaying MSG
+wait MSG        wait for a watch to connect while displaying MSG
 routing         sets up the routing to go through the local host and DNS 1.1.1.1
 pushface WF     pushes the named watchface to the watch (point to WF directory)
 watchface WF    sets the active watchface to the named watchface
@@ -246,3 +257,45 @@ Restoration is very similar:
 ```
 
 This will restore the settings to the connected watch.  **NOTE:** Use this option *very carefully*, as it will overwrite settings already on the watch.  For instance, it will set the current watchface regardless of whether that watchface is actually installed on the watch.  It's recommended to do a `restart` after restoring the configuration so that the settings take effect.  
+
+## Advanced scripting with watch-util
+The `watch-util` program is also intended to be "sourced" to allow for very flexible scripts.  Here is an example:
+
+```
+#! /bin/bash
+
+# source the script -- in real usage it is highly recommended to use the full path
+source watch-util
+
+# see if we are using ssh mode (default) or ADB mode
+while [[ $# -gt 0 ]] ; do
+    case $1 in 
+        -a|--adb)
+            ADB=true
+            shift
+            ;;
+        *)
+            echo "Ignoring unknown option $1"
+            shift
+            ;;
+    esac
+done 
+
+
+# now we can use everything defined within watch-util
+setTimeZone America/New_York
+setTime
+
+# here, we download a calendar file from someplace on the internet
+wget https://my.own.server.example.com/my.ics
+# now we copy the file to the watch
+pushFiles "ceres" "my.ics" "."
+# finally, we import the calendar on the watch
+doWatchCommand "ceres" "icalconverter import -d my.ics"
+```
+
+This is just a simple example and omits error checking, but should convey how this could be used to automatically script things on the watch.
+
+Note that the names of the functions aren't always identical to the command line options.  Reading the source code to examine the function is highly recommended.
+
+
