@@ -166,6 +166,8 @@ function getScreenshot {
 }
 
 function setRouting {
+# get this host's IPv4 address
+    MYADDR=$(hostname -I |grep -oP "192.168.2.[[:digit:]]+")
     doWatchCommand "root" "route add default gw ${MYADDR}"
     doWatchCommand "root" 'echo "nameserver 1.1.1.1" >> /etc/resolv.conf'
 }
@@ -201,8 +203,6 @@ QEMUPORT=2222
 QEMUADDR=localhost
 # Assume no ADB unless told otherwise
 ADB=false
-# get this host's IPv4 address
-MYADDR=$(hostname -I |grep -oP "192.168.2.[[:digit:]]+")
 
 while [[ $# -gt 0 ]] ; do
     case $1 in 
