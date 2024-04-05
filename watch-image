@@ -20,7 +20,7 @@ function showVersion {
     echo "watch-image v${VERSION}"
 }
 
-declare -a devices=("anthias" "bass" "beluga" "catfish" "dory" "firefish" "harmony" "koi" "inharmony" "lenok" "minnow" "mooneye" "narwhal" "nemo" "pike" "ray" "smelt" "sparrow" "sparrow-mainline" "sprat" "sturgeon" "sawfish" "skipjack" "swift" "tetra" "triggerfish" "wren")
+declare -a devices=("anthias" "bass" "beluga" "catfish" "dory" "firefish" "harmony" "hoki" "koi" "inharmony" "lenok" "minnow" "mooneye" "narwhal" "nemo" "pike" "ray" "smelt" "sparrow" "sparrow-mainline" "sprat" "sturgeon" "sawfish" "skipjack" "swift" "tetra" "triggerfish" "wren")
 
 # assume we're not saving
 save=false
