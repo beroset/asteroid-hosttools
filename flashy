@@ -56,6 +56,24 @@ Available options:
 
 EOF
 }
+
+function warnIfNoBackup {
+    backupfile="original-${codename}.img"
+    if [ ! -f "${backupfile}" ] ; then
+        echo "Warning: permanent install being attempted without backup file ${backupfile} present"
+        echo "It is STRONGLY advised to make a backup before attempting a permanent install as with this command:"
+        echo "watch-util ${codename} save"
+        read -p "Continue anyway? " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]] ; then
+            return
+        else 
+            echo "Cancelling operation."
+            exit 1 
+        fi
+    fi
+}
+
 if [ -z "$ASTEROIDROOT" ] ; then
     echo "WARNING: ASTEROIDROOT environment variable not set"
 fi
@@ -165,6 +183,7 @@ fi
 
 
 if [ "${temp}" != true ] ; then
+    ${condecho} warnIfNoBackup
     ${condecho} fastboot oem unlock
     ${condecho} fastboot flash userdata "${imgfile}" || exit 1
     ${condecho} fastboot flash boot "${bootfile}" || exit 1
