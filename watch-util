@@ -127,7 +127,7 @@ function setTimeZone {
 }
 
 function forgetKeys {
-    ssh-keygen -R ${WATCHADDR}
+    ssh-keygen -R ${WATCHADDR}:${WATCHPORT}
     ssh-keygen -R watch
 }
 
