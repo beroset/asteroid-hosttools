@@ -14,13 +14,43 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-VERSION="1.2"
+VERSION="1.3"
 
 function showVersion {
     echo "flashy v${VERSION}"
 }
 
-declare -a devices=("anthias" "bass" "beluga" "catfish" "dory" "firefish" "harmony" "hoki" "koi" "inharmony" "lenok" "minnow" "mooneye" "narwhal" "nemo" "pike" "ray" "smelt" "sparrow" "sparrow-mainline" "sprat" "sturgeon" "sawfish" "skipjack" "swift" "tetra" "triggerfish" "wren")
+#    codename           tempcmd         permcmd
+declare -a devices=(
+    "anthias            tempUser        permUser"
+    "bass               tempUser        permUser"
+    "beluga             tempRecovery    permUser"
+    "catfish            tempUser        permUser"
+    "dory               tempUser        permUser"
+    "firefish           tempUser        permUser"
+    "harmony            tempUser        permUser"
+    "hoki               tempRecovery    permUser"
+    "koi                tempUser        permUser"
+    "inharmony          tempUser        permUser"
+    "lenok              tempUser        permUser"
+    "minnow             tempUser        permUser"
+    "mooneye            tempUser        permUser"
+    "narwhal            tempUser        permUser"
+    "nemo               tempUser        permUser"
+    "pike               tempUser        permUser"
+    "ray                tempUser        permUser"
+    "smelt              tempUser        permUser"
+    "sparrow            tempUser        permUser"
+    "sparrow-mainline   tempUser        permUser"
+    "sprat              tempUser        permUser"
+    "sturgeon           tempUser        permUser"
+    "sawfish            tempUser        permUser"
+    "skipjack           tempUser        permUser"
+    "swift              tempUser        permUser"
+    "tetra              tempUser        permUser"
+    "triggerfish        tempUser        permUser"
+    "wren               tempUser        permUser"
+)
 
 # point to where the images get built
 defaultbuilddir="${ASTEROIDROOT}/build/tmp-glibc/deploy/images"
@@ -57,6 +87,71 @@ Available options:
 EOF
 }
 
+function findDevice {
+    for l in "${devices[@]}"; do
+        if [ -n "$ZSH_VERSION" ]; then
+            read -A spec <<< "$l"
+        else
+            read -a spec <<< "$l"
+        fi
+        codename="${spec[@]:0:1}"
+        tempcmd="${spec[@]:1:1}"
+        permcmd="${spec[@]:2:1}"
+        if [ "${codename}" = "$1" ]; then
+            valid=true
+            return 0
+        fi
+    done
+    return 1
+}
+
+function enterFastboot {
+    if [ "${fastboot}" != "true" ] ; then
+        if [ "${useadb}" = true ] ; then
+            ${condecho} adb reboot bootloader || exit 1
+        else
+            ${condecho} ssh root@192.168.2.15 "reboot bootloader"
+        fi
+    fi
+}
+
+function permUser {
+    local bootfile="$1"
+    local imagefile="$2"
+    enterFastboot
+    ${condecho} fastboot oem unlock
+    ${condecho} fastboot flash userdata "${imgfile}" || exit 1
+    ${condecho} fastboot flash boot "${bootfile}" || exit 1
+    ${condecho} fastboot continue
+}
+
+function tempUser {
+    local bootfile="$1"
+    local imagefile="$2"
+    if [ "${bootonly}" != true ] ; then
+        ${condecho} adb push -p "${imgfile}" /sdcard/asteroidos.ext4 || exit 1
+    fi
+    enterFastboot
+    ${condecho} fastboot oem unlock
+    ${condecho} fastboot boot "${bootfile}" || exit 1
+}
+
+# temporary installation into recovery partition
+function tempRecovery {
+    local bootfile="$1"
+    local imagefile="$2"
+    enterFastboot
+    ${condecho} fastboot oem unlock
+    ${condecho} fastboot flash recovery "${bootfile}" || exit 1
+    echo "Now use the buttons to boot into the recovery partition"
+    echo "and press the lower button within 1 second after the"
+    echo "orange AsteroidOS logo appears"
+    ${condecho} adb wait-for-usb-device
+    ${condecho} adb push -p "${imgfile}" /sdcard/asteroidos.ext4 || exit 1
+    ${condecho} adb reboot recovery
+}
+
+
 function warnIfNoBackup {
     backupfile="original-${codename}.img"
     if [ ! -f "${backupfile}" ] ; then
@@ -77,7 +172,6 @@ function warnIfNoBackup {
 if [ -z "$ASTEROIDROOT" ] ; then
     echo "WARNING: ASTEROIDROOT environment variable not set"
 fi
-
 
 while [[ $# -gt 0 ]] ; do
     case $1 in 
@@ -121,14 +215,7 @@ while [[ $# -gt 0 ]] ; do
             ;;
         *)
             valid=false
-            for device in "${devices[@]}"; do
-                [[ "$1" == "${device}" ]] && valid=true
-            done
-            if [[ "${valid}" = true ]]; then
-                codename=$1
-            else
-                echo "Ignoring unknown option $1"
-            fi
+            findDevice "$1" || echo "Ignoring unknown option $1"
             shift
             ;;
     esac
@@ -170,29 +257,12 @@ if [ "${temp}" != true ] ; then
     ${condecho} warnIfNoBackup
 fi
 
-if [ "${fastboot}" != "true" ] ; then
-    if [ "${temp}" = true ] ; then
-        if [ "${bootonly}" != true ] ; then
-            ${condecho} adb push -p "${imgfile}" /sdcard/asteroidos.ext4 || exit 1
-        fi
-        ${condecho} adb reboot bootloader || exit 1
-    else
-        if [ "${useadb}" = true ] ; then
-            ${condecho} adb reboot bootloader || exit 1
-        else
-            ${condecho} ssh root@192.168.2.15 "reboot bootloader"
-        fi
-    fi
-fi
-
-if [ "${temp}" != true ] ; then
-    ${condecho} fastboot oem unlock
-    ${condecho} fastboot flash userdata "${imgfile}" || exit 1
-    ${condecho} fastboot flash boot "${bootfile}" || exit 1
-    ${condecho} fastboot continue
+if [ "${temp}" = true ] ; then
+    ${tempcmd} "${bootfile}" "${imgfile}"
 else 
-    ${condecho} fastboot boot "${bootfile}" || exit 1
+    ${permcmd} "${bootfile}" "${imgfile}"
 fi
 
 ${condecho} ssh-keygen -R watch
 ${condecho} ssh-keygen -R 192.168.2.15
+
