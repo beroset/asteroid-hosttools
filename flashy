@@ -53,7 +53,7 @@ declare -a devices=(
 )
 
 # point to where the images get built
-defaultbuilddir="${ASTEROIDROOT}/build/tmp-glibc/deploy/images"
+defaultbuilddir="${ASTEROIDROOT}/build/tmp/deploy/images"
 # assume we're not already in fastboot mode
 fastboot=false
 # assume we're not in dryrun mode
