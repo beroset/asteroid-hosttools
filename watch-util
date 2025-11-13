@@ -128,6 +128,7 @@ function setTimeZone {
 
 function forgetKeys {
     ssh-keygen -R ${WATCHADDR}:${WATCHPORT}
+    ssh-keygen -R ${WATCHADDR}
     ssh-keygen -R watch
 }
 
@@ -167,8 +168,8 @@ function getScreenshot {
 
 function setRouting {
 # get this host's IPv4 address
-    MYADDR=$(doWatchCommand "root" "who" | awk '{print $NF}')
-    doWatchCommand "root" "route add default gw ${MYADDR}"
+    MYADDR=$(doWatchCommand "root" "who" | awk '{gsub(/[()]/, "", $NF); print $NF}')
+    doWatchCommand "root" "ip route add default via ${MYADDR}"
     doWatchCommand "root" 'echo "nameserver 1.1.1.1" >> /etc/resolv.conf'
 }
 
@@ -270,7 +271,7 @@ while [[ $# -gt 0 ]] ; do
             shift
             ;;
         pushface)
-             pushWatchface "$2"
+            pushWatchface "$2"
             shift
             shift
             ;;
