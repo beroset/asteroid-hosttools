@@ -168,7 +168,7 @@ function getScreenshot {
 
 function setRouting {
 # get this host's IPv4 address
-    MYADDR=$(doWatchCommand "root" "who" | awk '{gsub(/[()]/, "", $NF); print $NF}')
+    MYADDR=$(doWatchCommand "root" "who" | awk '{gsub(/[()]/, "", $NF); print $NF}' | tr -d '\r')
     doWatchCommand "root" "ip route add default via ${MYADDR}"
     doWatchCommand "root" 'echo "nameserver 1.1.1.1" >> /etc/resolv.conf'
 }
