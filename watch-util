@@ -177,14 +177,18 @@ function backupSettings {
     local backupdir="$1"
     pullFiles "ceres" "/home/ceres/.config" "${backupdir}/ceresconfig"
     pullFiles "root" "/var/lib/connman" "${backupdir}/connman"
+    doWatchCommand "ceres" "dconf dump /" > "${backupdir}/dconf_backup.txt"
 }
 
 function restoreSettings {
     local backupdir="$1"
     pushd "${backupdir}/ceresconfig" || exit
     pushFiles "ceres" "*" "/home/ceres/.config/"
-    cd "${backupdir}/connman" || exit
+    cd "../connman" || exit
     pushFiles "root" "*" "/var/lib/connman"
+    cd ".." || exit
+    pushFiles "ceres" "dconf_backup.txt" "/home/ceres"
+    doWatchCommand "ceres" "dconf load / < dconf_backup.txt"
     popd || exit
 }
 
