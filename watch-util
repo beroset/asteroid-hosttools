@@ -16,8 +16,9 @@ Available options:
 -h or --help    prints this help screen and quits
 -a or --adb     uses ADB command to communicate with watch
 -p or --port    specifies a port to use for ssh and scp commands
--r or --remote  specifies the remote (watch)  name or address for ssh and scp commands
 -q or --qemu    communicates with QEMU emulated watch (same as -r localhost -p 2222 )
+-r or --remote  specifies the remote (watch)  name or address for ssh and scp commands
+-t or --transport when used with ADB mode, specifies the transport id
 -v or --version displays the version of this program
 
 Available commands:
@@ -48,7 +49,7 @@ function doWatchCommand {
     case ${user} in 
         root)
             if [ "${ADB}" == true ] ; then
-                adb shell "${cmd}"
+                adb ${TRANSPORT_ID} shell "${cmd}"
             else
                 ssh -p "${WATCHPORT}" -t root@"${WATCHADDR}" ${cmd}
             fi
@@ -56,7 +57,7 @@ function doWatchCommand {
         ceres)
             if [ "${ADB}" == true ] ; then
                 printf -v cmd %q "${cmd}"
-                adb shell "su -l -c ${cmd} ceres"
+                adb ${TRANSPORT_ID} shell "su -l -c ${cmd} ceres"
             else
                 ssh -p "${WATCHPORT}" -t ceres@"${WATCHADDR}" ${cmd}
             fi
@@ -81,7 +82,7 @@ function pushFiles {
         if [ "${user}" != "root" ] && [[ "${destdir::1}" != '/' ]] ; then
             destdir="/home/${user}/${destdir}"
         fi
-        adb push ${sourcedir} "${destdir}"
+        adb ${TRANSPORT_ID} push ${sourcedir} "${destdir}"
     else
         scp -P"${WATCHPORT}" -r ${sourcedir} "${user}@${WATCHADDR}:${destdir}"
     fi
@@ -95,7 +96,7 @@ function pullFiles {
         if [ "${user}" != "root" ] && [[ "${sourcedir::1}" != '/' ]] ; then
             sourcedir="/home/${user}/${sourcedir}"
         fi
-        adb pull ${sourcedir} "${destdir}"
+        adb ${TRANSPORT_ID} pull ${sourcedir} "${destdir}"
     else
         scp -P"${WATCHPORT}" -r "${user}@${WATCHADDR}:${sourcedir}" "${destdir}"
     fi
@@ -135,7 +136,7 @@ function forgetKeys {
 function watchPresent {
     local result=false
     if [ "${ADB}" == true ] ; then
-        if [ "$(adb get-state 2>/dev/null)" = "device" ] ; then
+        if [ "$(adb ${TRANSPORT_ID} get-state 2>/dev/null)" = "device" ] ; then
             result=true
         fi
     else
@@ -149,7 +150,7 @@ function watchPresent {
 function waitWatch {
     echo "$1"
     if [ "${ADB}" == true ] ; then
-        adb wait-for-usb-device
+        adb ${TRANSPORT_ID} wait-for-usb-device
     else
         while ! route |grep 192.168.2.0 > /dev/null ; do 
             sleep 1
@@ -208,6 +209,8 @@ QEMUPORT=2222
 QEMUADDR=localhost
 # Assume no ADB unless told otherwise
 ADB=false
+# Transport id is not needed; only one watch
+TRANSPORT_ID=
 
 while [[ $# -gt 0 ]] ; do
     case $1 in 
@@ -222,11 +225,16 @@ while [[ $# -gt 0 ]] ; do
             ;;
         -p|--port)
             WATCHPORT="$2"
-            shift
+            shift 
             shift
             ;;
         -r|--remote)
             WATCHADDR="$2"
+            shift
+            shift
+            ;;
+        -t|--transport)
+            TRANSPORT_ID="-t $2"
             shift
             shift
             ;;
