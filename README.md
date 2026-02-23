@@ -298,4 +298,6 @@ This is just a simple example and omits error checking, but should convey how th
 
 Note that the names of the functions aren't always identical to the command line options.  Reading the source code to examine the function is highly recommended.
 
+See also `example.sh` for a way to customize the complete setup of a freshly flashed watch.
+
 
