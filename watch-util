@@ -46,7 +46,7 @@ EOF
 function doWatchCommand {
     local user="$1"
     local cmd=$2
-    case ${user} in 
+    case ${user} in
         root)
             if [ "${ADB}" == true ] ; then
                 adb ${TRANSPORT_ID} shell "${cmd}"
@@ -135,13 +135,17 @@ function forgetKeys {
 
 function watchPresent {
     local result=false
-    if [ "${ADB}" == true ] ; then
-        if [ "$(adb ${TRANSPORT_ID} get-state 2>/dev/null)" = "device" ] ; then
-            result=true
-        fi
+    if [ "${WATCHADDR}" == "${QEMUADDR}" ] ; then
+        result=true
     else
-        if route |grep 192.168.2.0 > /dev/null ; then
-            result=true
+        if [ "${ADB}" == true ] ; then
+            if [ "$(adb ${TRANSPORT_ID} get-state 2>/dev/null)" = "device" ] ; then
+                result=true
+            fi
+        else
+            if route |grep 192.168.2.0 > /dev/null ; then
+                result=true
+            fi
         fi
     fi
     echo "${result}"
@@ -149,12 +153,14 @@ function watchPresent {
 
 function waitWatch {
     echo "$1"
-    if [ "${ADB}" == true ] ; then
-        adb ${TRANSPORT_ID} wait-for-usb-device
-    else
-        while ! route |grep 192.168.2.0 > /dev/null ; do 
-            sleep 1
-        done
+    if [ "${WATCHADDR}" != "${QEMUADDR}" ] ; then
+        if [ "${ADB}" == true ] ; then
+            adb ${TRANSPORT_ID} wait-for-usb-device
+        else
+            while ! route |grep 192.168.2.0 > /dev/null ; do
+                sleep 1
+            done
+        fi
     fi
 }
 
@@ -213,7 +219,7 @@ ADB=false
 TRANSPORT_ID=
 
 while [[ $# -gt 0 ]] ; do
-    case $1 in 
+    case $1 in
         -a|--adb)
             ADB=true
             shift
@@ -225,7 +231,7 @@ while [[ $# -gt 0 ]] ; do
             ;;
         -p|--port)
             WATCHPORT="$2"
-            shift 
+            shift
             shift
             ;;
         -r|--remote)
@@ -327,5 +333,5 @@ while [[ $# -gt 0 ]] ; do
             shift
             ;;
     esac
-done 
+done
 
