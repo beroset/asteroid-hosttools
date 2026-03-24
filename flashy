@@ -30,8 +30,8 @@ declare -a devices=(
     "firefish           tempUser        permUser"
     "harmony            tempUser        permUser"
     "hoki               tempRecovery    permUser"
-    "koi                tempUser        permUser"
     "inharmony          tempUser        permUser"
+    "koi                tempUser        permUser"
     "lenok              tempUser        permUser"
     "minnow             tempUser        permUser"
     "mooneye            tempUser        permUser"
@@ -39,13 +39,15 @@ declare -a devices=(
     "nemo               tempUser        permUser"
     "pike               tempUser        permUser"
     "ray                tempUser        permUser"
+    "rinato             tempUser        permUser"
+    "rubyfish           tempUser        permUser"
+    "sawfish            tempUser        permUser"
+    "skipjack           tempUser        permUser"
     "smelt              tempUser        permUser"
     "sparrow            tempUser        permUser"
     "sparrow-mainline   tempUser        permUser"
     "sprat              tempUser        permUser"
     "sturgeon           tempUser        permUser"
-    "sawfish            tempUser        permUser"
-    "skipjack           tempUser        permUser"
     "swift              tempUser        permUser"
     "tetra              tempUser        permUser"
     "triggerfish        tempUser        permUser"
@@ -65,7 +67,7 @@ useadb=false
 # set empty builddir to start
 builddir=''
 # nightly url base directory
-nightlyurl="https://release.asteroidos.org/nightlies"
+nightlyurl="https://release.asteroidos.org/2.0"
 
 function showHelp {
     showVersion
