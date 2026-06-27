@@ -172,7 +172,12 @@ function warnIfNoBackup {
 }
 
 if [ -z "$ASTEROIDROOT" ] ; then
-    echo "WARNING: ASTEROIDROOT environment variable not set"
+    echo "INFO: ASTEROIDROOT environment variable not set."
+    echo "If you're flashing a nightly version, you can ignore this. Otherwise,"
+    echo "if you are building and wish to flash your own version of AsteroidOS,"
+    echo "set this environment variable to the directory in which the"
+    echo "prepare-build.sh file exists."  
+    echo ""
 fi
 
 while [[ $# -gt 0 ]] ; do
