@@ -237,7 +237,7 @@ fi
 if [ "${builddir}" = "" ] ; then
     builddir="${defaultbuilddir}/${codename}"
 fi
-bootfilename=zImage-dtb-${codename}.fastboot
+bootfilename=asteroid-${codename}-boot.img
 imgfilename=asteroid-image-${codename}.rootfs.ext4
 
 bootfile="${builddir}/${bootfilename}"
