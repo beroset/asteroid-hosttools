@@ -83,6 +83,9 @@ function pushFiles {
             destdir="/home/${user}/${destdir}"
         fi
         adb ${TRANSPORT_ID} push ${sourcedir} "${destdir}"
+        if [ "${user}" != "root" ] ; then
+            doWatchCommand "root" "chown -R ${user}:${user} ${destdir}"
+        fi
     else
         scp -P"${WATCHPORT}" -r ${sourcedir} "${user}@${WATCHADDR}:${destdir}"
     fi
